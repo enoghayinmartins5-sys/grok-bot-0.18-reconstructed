@@ -1,0 +1,47 @@
+# Package the reconstructed Grok Bot 0.18 macOS app on a GitHub-hosted
+# Apple Silicon runner, using the repo's own documented quick start.
+# Produces: dist/Grok Bot 0.18 Reconstructed.app (ad-hoc signed, as the
+# repo's scripts/package-macos.mjs builds it). Run manually from the
+# Actions tab, or push to this branch.
+name: Package Grok Bot 0.18 Reconstructed (macOS)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [grok-bot-macos-package]
+    paths: [.github/workflows/package-macos.yml]
+
+permissions:
+  contents: read
+
+jobs:
+  package-macos:
+    runs-on: macos-15 # Apple Silicon
+    timeout-minutes: 30
+    steps:
+      - name: Check out with Git LFS
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+      - name: Set up Node.js 26.5.0
+        uses: actions/setup-node@v4
+        with:
+          node-version: "26.5.0"
+      - name: Show tool versions
+        run: node --version && npm --version && git lfs version
+      - name: Install dependencies
+        run: npm ci
+      - name: Bootstrap runtime from pinned 0.18.0 DMG
+        run: npm run bootstrap
+      - name: Typecheck and test
+        run: npm run check
+      - name: Package macOS app
+        run: npm run package
+      - name: Verify packaged app
+        run: npm run verify
+      - name: Upload packaged app
+        uses: actions/upload-artifact@v4
+        with:
+          name: Grok-Bot-0.18-Reconstructed-macOS
+          path: dist/
+          if-no-files-found: error
